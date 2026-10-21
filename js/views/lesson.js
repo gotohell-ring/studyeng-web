@@ -25,20 +25,15 @@
     let content = '';
     if (s.stage === 'intro') {
       content = `${header('첫 번째 장면', l.titleKo, l.intro?.situationKo || '대화를 듣고 연습해요.')}` +
-        `<div class="dialogue">${
-        (l.intro?.dialogue || []).map(/* 각 항목을 표시 값으로 바꾼다. */line => `<div class="bubble ${line.speaker === 'learner' ? 'mine' : ''}">` +
-        `<small>${line.speaker === 'learner' ? '나' : '직원'}</small>` +
-        `<p lang="en">${e(line.en)}</p>` +
-        `<p class="small muted">${e(line.ko)}</p>` +
-        `${say(line.en)}</div>`).join('')
-      }</div>` +
+        `${V.helpers.dialogue(l.intro?.dialogue, '직원')}` +
         `<div class="actions">${primary('핵심 문장 연습하기', 'advance')}` +
         `${button('건너뛰기', 'advance', 'text-button')}</div>`;
     } else if (s.stage === 'grammar') {
       content = `${header('문법 한 가지', l.grammar?.titleKo || '표현을 알아봐요')}` +
         `<div class="grammar-body">${(l.grammar?.bodyKo || []).map(/* 각 항목을 표시 값으로 바꾼다. */x => `<p>${e(x)}</p>`).join('')}</div>` +
+        `${V.helpers.sayAll((l.grammar?.examples || []).map((x, i) => ({ i, t: x.en, s: 'example' })).filter(x => x.t), '▶ 예문 모두 듣기')}` +
         `${
-        (l.grammar?.examples || []).map(/* 각 항목을 표시 값으로 바꾼다. */x => `<div class="example"><p lang="en">${e(x.en)}</p><p class="muted">${e(x.ko)}</p>${say(x.en)}</div>`).join('')
+        (l.grammar?.examples || []).map(/* 각 항목을 표시 값으로 바꾼다. */(x, i) => `<div class="example" data-line="${i}"><p lang="en">${e(x.en)}</p><p class="muted">${e(x.ko)}</p>${say(x.en)}</div>`).join('')
       }` +
         `<div class="actions">${primary('드릴 시작하기 · 25문항', 'advance')}` +
         `${button('건너뛰기', 'advance', 'text-button')}</div>`;

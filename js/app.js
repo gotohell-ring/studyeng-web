@@ -94,6 +94,40 @@
         SE.speech.say(text, { auto: true });
       }
     },
+    // "전체 듣기": 누르면 대화 전체를 순서대로 읽고, 읽는 중에 다시 누르면 멈춘다
+    playAll(el) {
+      if (el.classList.contains('playing')) {
+        SE.speech.cancel();
+        this.resetPlayAll();
+        return;
+      }
+      let items = [];
+      try {
+        items = JSON.parse(el.dataset.lines || '[]');
+      } catch (_) {}
+      this.resetPlayAll();
+      el.classList.add('playing');
+      el.textContent = '■ 멈추기';
+      const scope = el.closest('.panel, section, #app') || document;
+      SE.speech.sayAll(items, {
+        onLine(i) {
+          scope.querySelectorAll('[data-line]').forEach(b => b.classList.toggle('speaking', b.dataset.line === String(i)));
+          const current = scope.querySelector(`[data-line="${i}"]`);
+          if (current && current.scrollIntoView) {
+            current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
+        },
+        onEnd: () => this.resetPlayAll()
+      });
+    },
+    // 전체 듣기 버튼과 강조 표시를 처음 상태로 되돌린다.
+    resetPlayAll() {
+      document.querySelectorAll('[data-action="say-all"].playing').forEach(b => {
+        b.classList.remove('playing');
+        b.textContent = b.dataset.label || '▶ 전체 대화 듣기';
+      });
+      document.querySelectorAll('[data-line].speaking').forEach(b => b.classList.remove('speaking'));
+    },
     // 진행을 저장하고 학습 화면을 닫는다.
     close() {
       if (this.route === '/review' && SE.store.data.reviewSession) {
@@ -289,7 +323,11 @@
           U.toast('T2 중급으로 설정되어 있어요.');
           break;
         case 'say':
+          this.resetPlayAll();
           SE.speech.say(el.dataset.text);
+          break;
+        case 'say-all':
+          this.playAll(el);
           break;
         case 'hint':
           {

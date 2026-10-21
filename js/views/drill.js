@@ -46,12 +46,7 @@
           prompt = `<h2>${e(d.ko)}</h2>`;
           break;
         case 'C':
-          prompt = `<div class="dialogue">${
-            (d.dialogue || []).map(/* 각 항목을 표시 값으로 바꾼다. */l => `<div class="bubble ${l.speaker === 'learner' ? 'mine' : ''}">` +
-            `<small>${l.speaker === 'learner' ? '나' : '상대'}</small>` +
-            `<p lang="en">${l.blank ? '내 대사 · · ·' : e(l.en)}</p>` +
-            `${l.blank ? '' : say(l.en)}</div>`).join('')
-          }</div>`;
+          prompt = V.helpers.dialogue(d.dialogue, '상대');
           break;
         case 'D':
           prompt = `<h2 lang="en">${e(d.pattern)}</h2><p>${e(d.slotKo)}</p><p class="muted" lang="en">${e(d.slotEn)}</p>`;

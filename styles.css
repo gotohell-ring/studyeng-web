@@ -1275,3 +1275,27 @@ main {
     display: none;
   }
 }
+
+/* 전체 대화 듣기 */
+.dialogue-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin: 4px 0 10px;
+}
+
+.dialogue-tools .play-all {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+}
+
+.dialogue-tools .play-all.playing {
+  background: var(--primary);
+  color: #fff;
+}
+
+[data-line].speaking {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  transition: outline-color 150ms;
+}

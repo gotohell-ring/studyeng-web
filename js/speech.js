@@ -315,6 +315,91 @@
         window.speechSynthesis.speak(u);
       } catch (_) {}
     },
+    // 여러 문장을 순서대로 읽는다. items = [{ i, t, s }], hooks.onLine(i)·hooks.onEnd(완료 여부)
+    // 다른 읽기·화면 이동·멈추기(cancel)가 오면 sayToken이 바뀌어 즉시 중단된다.
+    sayAll(items, hooks = {}) {
+      const list = (items || []).filter(x => x && x.t);
+      if (!list.length) {
+        hooks.onEnd?.(true);
+        return;
+      }
+      if (!this.synthesisSupported()) {
+        SE.util.toast('이 브라우저에서 읽어주기를 사용할 수 없어요 → 화면의 문장을 읽어 주세요.', { once: true });
+        hooks.onEnd?.(false);
+        return;
+      }
+      const token = ++sayToken;
+      const synth = window.speechSynthesis;
+      const begin = voices => {
+        if (token !== sayToken) {
+          return;
+        }
+        const main = SE.speech.englishVoice(voices);
+        if (!main && voices.length > 0) {
+          SE.util.toast(NO_ENGLISH_VOICE, { once: true });
+          hooks.onEnd?.(false);
+          return;
+        }
+        // 화자 구분: 영어 음성이 둘 이상이면 내 대사(learner)는 다른 음성, 하나뿐이면 음 높이만 바꾼다
+        const other = (voices || []).find(v => /^en(?:-|_)/i.test(v.lang) && main && v.name !== main.name && v.localService === main.localService) || null;
+        const rate = SE.store.data.settings.speechRate;
+        let index = 0;
+        const next = () => {
+          if (token !== sayToken) {
+            return;
+          }
+          if (index >= list.length) {
+            hooks.onEnd?.(true);
+            return;
+          }
+          const item = list[index++];
+          hooks.onLine?.(item.i);
+          const u = new window.SpeechSynthesisUtterance(String(item.t));
+          u.lang = 'en-US';
+          u.rate = rate;
+          const mine = item.s === 'learner';
+          const voice = mine && other ? other : main;
+          if (voice) {
+            u.voice = voice;
+          }
+          if (mine && !other) {
+            u.pitch = 1.2;
+          }
+          let done = false;
+          // Safari는 onend를 빠뜨릴 때가 있어 문장 길이로 예상 시간을 잡아 넘어간다 (늦으면 다음 문장이 대기열에 쌓일 뿐)
+          const fallback = setTimeout(() => go(), 2000 + String(item.t).length * 110 / Math.max(0.3, rate || 1));
+          const go = () => {
+            if (done) {
+              return;
+            }
+            done = true;
+            clearTimeout(fallback);
+            setTimeout(next, 350);
+          };
+          u.onend = go;
+          u.onerror = event => {
+            if (event && (event.error === 'interrupted' || event.error === 'canceled')) {
+              return;
+            }
+            go();
+          };
+          synth.speak(u);
+        };
+        if (synth.speaking || synth.pending) {
+          synth.cancel();
+          setTimeout(next, SAFARI_ENGINE ? 150 : 0);
+        } else {
+          next();
+        }
+        SE.util.trace('tts-all ' + list.length);
+      };
+      const ready = synth.getVoices();
+      if (ready.length > 0) {
+        begin(ready);
+      } else {
+        loadVoices().then(begin);
+      }
+    },
     // 영어 음성 하나를 고른다: 로컬 미국 영어 → 로컬 영어 → 온라인 미국 영어 → 온라인 영어.
     englishVoice(voices) {
       const english = (voices || []).filter(v => /^en(?:-|_)/i.test(v.lang));
