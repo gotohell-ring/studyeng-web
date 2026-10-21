@@ -556,7 +556,7 @@ main {
 }
 
 .task {
-  min-height: calc(100dvh - 155px);
+  min-height: calc(100svh - 155px);
   display: flex;
   flex-direction: column;
 }
@@ -1127,7 +1127,7 @@ summary {
     font-size: 12px;
   }
   .task {
-    min-height: calc(100dvh - 145px);
+    min-height: calc(100svh - 145px);
   }
   .prompt h2 {
     font-size: 22px;
@@ -1195,5 +1195,83 @@ summary {
     animation: none!important;
     transition: none!important;
     scroll-behavior: auto!important;
+  }
+}
+
+
+/* 하단 메뉴가 있는 화면은 메뉴 높이 + 홈 표시줄만큼 여백을 두어 마지막 버튼까지 스크롤된다 */
+main {
+  padding-bottom: calc(118px + env(safe-area-inset-bottom));
+}
+
+.lesson-mode main {
+  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+}
+
+/* Safari 브라우저 모드: 아래 도구 막대(주소창)와 겹치지 않도록 메뉴를 머리글 아래 상단 고정으로 옮긴다 */
+.safari-browser body {
+  display: flex;
+  flex-direction: column;
+}
+
+.safari-browser .site-header {
+  order: 0;
+}
+
+.safari-browser .tabs {
+  order: 1;
+  position: sticky;
+  top: 0;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 22px 22px;
+  padding: 6px 12px 8px;
+  box-shadow: 0 5px 20px #244c3510;
+}
+
+.safari-browser .tabs a {
+  flex-direction: row;
+  min-height: 44px;
+  gap: 6px;
+}
+
+.safari-browser .tabs span {
+  font-size: 18px;
+}
+
+.safari-browser main {
+  order: 2;
+  width: 100%;
+  /* 아래 도구 막대 높이(약 90px)만큼 더 스크롤되어 마지막 버튼이 가려지지 않게 한다 */
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
+
+.safari-browser.lesson-mode main,
+.safari-browser .lesson-mode main {
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
+
+.safari-browser #storage-warning,
+.safari-browser .skip-link {
+  order: 0;
+}
+
+.safari-browser .site-header,
+.safari-browser .tabs,
+.safari-browser main {
+  width: 100%;
+  max-width: 768px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 터치 기기에는 키보드 단축키 안내를 숨긴다 */
+@media (hover: none) and (pointer: coarse) {
+  .shortcuts {
+    display: none;
   }
 }

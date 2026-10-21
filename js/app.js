@@ -415,6 +415,10 @@
     },
     // 저장소와 화면 이벤트를 초기화한다.
     init() {
+      // Safari 브라우저(홈 화면 앱이 아닌 경우)는 화면 아래 도구 막대가 하단 메뉴를 가리므로 메뉴를 위로 올린다
+      const standalone = window.navigator.standalone === true ||
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      document.documentElement.classList.toggle('safari-browser', !!SE.speech.safari && !standalone);
       SE.store.load();
       // Content retirement is authoritative and does not remove history.
       const retired = Object.values(SE.content?.lessons || {}).flatMap(/* 콜백에서 필요한 값을 계산하거나 상태를 갱신한다. */l => l.retired || []);
