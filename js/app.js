@@ -205,7 +205,9 @@
             state.draft = textarea.value || '';
             SE.store.save();
           }
-          U.toast((reasons[reason] || '음성 인식이 멈췄어요') + ' → 키보드로 입력할게요.');
+          // iPhone은 키보드의 마이크(받아쓰기) 버튼이 웹 음성 인식보다 안정적이라 함께 안내한다
+          U.toast((reasons[reason] || '음성 인식이 멈췄어요') + ' → 키보드로 입력할게요.' +
+            (SE.speech.safari ? ' 키보드의 🎤 받아쓰기 버튼으로 말해도 돼요.' : ''));
           if (!test) {
             A.render();
           } else {

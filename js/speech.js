@@ -84,10 +84,12 @@
           rec = null;
         }
         callbacks.state?.(false, 0);
-        if (reason || !transcript.trim()) {
-          callbacks.failed?.(reason || 'no-result');
+        // Safari는 녹음을 멈추면 확정(final) 결과 없이 중간 결과만 남기는 경우가 많아 중간 결과도 답으로 쓴다
+        const text = (transcript.trim() || interim.trim());
+        if (text && (!reason || reason === 'no-speech' || reason === 'aborted')) {
+          callbacks.result?.(text);
         } else {
-          callbacks.result?.(transcript.trim());
+          callbacks.failed?.(reason || 'no-result');
         }
       };
       if (!this.supported()) {
@@ -104,13 +106,37 @@
         const start = Date.now();
         active = true;
         stopRequested = false;
+        // Safari는 멈춘 뒤 마지막 결과를 늦게 보내므로 종료 이벤트를 더 오래 기다린다
+        const endWait = SAFARI_ENGINE ? 2500 : 700;
         // 녹음을 멈추고 종료 이벤트를 기다린다.
         const watchdog = () => {
           if (!current()) {
             return;
           }
           this.stop();
-          timers.push(setTimeout(/* 콜백에서 필요한 값을 계산하거나 상태를 갱신한다. */() => finish(null), 700));
+          timers.push(setTimeout(() => finish(null), endWait));
+        };
+        // 마이크가 실제로 열린 시점부터 "목소리 없음"을 센다 (Safari는 열리는 데 1~2초 걸림)
+        let noSpeechTimer = null;
+        const armNoSpeech = () => {
+          clearTimeout(noSpeechTimer);
+          noSpeechTimer = setTimeout(() => {
+            if (current() && !heard) {
+              finish('no-speech');
+            }
+          }, SAFARI_ENGINE ? 8000 : 5000);
+          timers.push(noSpeechTimer);
+        };
+        rec.onaudiostart = () => {
+          if (current()) {
+            SE.util.trace('mic-audio');
+            armNoSpeech();
+          }
+        };
+        rec.onsoundstart = () => {
+          if (current()) {
+            heard = true;
+          }
         };
         // 음성이 감지되었음을 기록한다.
         const markSpeech = () => {
@@ -154,6 +180,7 @@
         // 콜백에서 필요한 값을 계산하거나 상태를 갱신한다.
         rec.onerror = e => {
           if (current()) {
+            SE.util.trace('mic-error ' + (e.error || ''));
             finish(e.error || 'recognition-error');
           }
         };
@@ -166,38 +193,29 @@
         const synth = window.speechSynthesis;
         if (synth && (synth.speaking || synth.pending)) {
           synth.cancel();
-          // Safari는 읽기 직후 바로 녹음을 시작하면 마이크가 응답하지 않는 경우가 있어 잠시 기다린다.
-          timers.push(setTimeout(() => {
-            if (current()) {
-              try {
-                rec.start();
-              } catch (_) {
-                finish('start-failed');
-              }
-            }
-          }, 250));
-        } else {
-          rec.start();
         }
+        // iPhone Safari는 버튼을 누른 그 순간(같은 이벤트 안)에 start()해야 마이크가 열린다 → 지연 없이 바로 시작
+        rec.start();
         SE.util.trace('mic-start');
         callbacks.state?.(true, 15);
-        timers.push(setInterval(/* 콜백에서 필요한 값을 계산하거나 상태를 갱신한다. */() => {
+        // onaudiostart가 오지 않는 엔진을 위해 시작 시점에도 한 번 걸어 둔다 (오면 그 시점부터 다시 셈)
+        armNoSpeech();
+        timers.push(setInterval(/* 남은 시간 표시를 갱신한다. */() => {
           if (current()) {
             callbacks.state?.(true, Math.max(0, 15 - Math.floor((Date.now() - start) / 1000)));
           }
         }, 200));
-        timers.push(setTimeout(/* 콜백에서 필요한 값을 계산하거나 상태를 갱신한다. */() => {
-          if (current() && !heard) {
-            finish('no-speech');
-          }
-        }, 5000));
         timers.push(setTimeout(watchdog, 15000));
-        // User stop must also finish if an engine never dispatches onend.
-        timers.push(setInterval(/* 콜백에서 필요한 값을 계산하거나 상태를 갱신한다. */() => {
+        // 사용자가 멈췄는데 종료 이벤트가 오지 않으면 일정 시간 뒤 마친다
+        let stopSeenAt = 0;
+        timers.push(setInterval(() => {
           if (current() && stopRequested) {
-            finish(null);
+            stopSeenAt = stopSeenAt || Date.now();
+            if (Date.now() - stopSeenAt >= endWait) {
+              finish(null);
+            }
           }
-        }, 750));
+        }, 250));
       } catch (e) {
         finish('start-failed');
       }
