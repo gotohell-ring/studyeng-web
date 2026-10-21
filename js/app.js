@@ -229,6 +229,11 @@
         storageBlocked: SE.store.blocked,
         storageWriteFailed: SE.store.writeFailed,
         aiAvailable: false,
+        safari: !!SE.speech.safari,
+        standalone: window.navigator.standalone === true,
+        englishVoices: SE.speech.englishVoiceNames ? SE.speech.englishVoiceNames() : [],
+        // 최근 동작 이름(마이크 시작·오류 코드 등, 학습 입력 없음)
+        recentActions: U.trail.slice(-20),
         errors: SE.store.data.errors.slice(-50)
       }, null, 2);
     },
