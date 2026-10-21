@@ -29,6 +29,16 @@ button,input,textarea,select {
   font: inherit;
 }
 
+/* iOS Safari는 16px 미만 입력창에 초점이 가면 화면을 확대해 멈춘 것처럼 보이므로 최소 16px */
+input,textarea,select {
+  font-size: max(16px, 1em);
+}
+
+/* 두 번 탭 확대 지연(약 300ms) 제거 */
+button,a,label,summary,[data-action] {
+  touch-action: manipulation;
+}
+
 button,a,label {
   -webkit-tap-highlight-color: transparent;
 }

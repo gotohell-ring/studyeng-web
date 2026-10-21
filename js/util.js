@@ -125,6 +125,27 @@
         el.remove();
       }
     },
+    // 최근 동작 이름 20개 (학습 입력은 기록하지 않음). 멈춤이 생기면 진단에 함께 남긴다.
+    trail: [],
+    trace(name) {
+      this.trail.push(new Date().toISOString().slice(11, 19) + ' ' + name);
+      if (this.trail.length > 20) {
+        this.trail.shift();
+      }
+    },
+    // 메인 스레드가 2.5초 이상 응답하지 않으면 진단 로그에 남긴다 (화면이 보일 때만)
+    watchStalls() {
+      // performance.now()는 시계 변경의 영향을 받지 않는다
+      let last = performance.now();
+      setInterval(() => {
+        const now = performance.now(), gap = now - last;
+        last = now;
+        // 60초 넘는 간격은 화면 잠금·백그라운드 복귀이므로 멈춤으로 보지 않는다
+        if (gap > 2500 && gap < 60000 && !document.hidden) {
+          this.error({ name: 'stall ' + Math.round(gap / 100) / 10 + 's' }, '멈춤 감지 ' + (location.hash || '#/home') + ' ← ' + this.trail.slice(-5).join(' > '));
+        }
+      }, 1000);
+    },
     // 학습 입력을 제외한 오류 정보를 저장한다.
     error(error, source = '앱') {
       // Never log learner input or arbitrary exception messages which may contain it.

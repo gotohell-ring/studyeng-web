@@ -49,7 +49,7 @@
         rec = null;
       }
       try {
-        if (window.speechSynthesis) {
+        if (window.speechSynthesis && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) {
           window.speechSynthesis.cancel();
         }
       } catch (_) {}
@@ -98,7 +98,7 @@
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         rec = new Recognition();
         rec.lang = 'en-US';
-        rec.continuous = true;
+        rec.continuous = !SAFARI_ENGINE;
         rec.interimResults = true;
         rec.maxAlternatives = 1;
         const start = Date.now();
@@ -163,7 +163,23 @@
             finish(null);
           }
         };
-        rec.start();
+        const synth = window.speechSynthesis;
+        if (synth && (synth.speaking || synth.pending)) {
+          synth.cancel();
+          // Safari는 읽기 직후 바로 녹음을 시작하면 마이크가 응답하지 않는 경우가 있어 잠시 기다린다.
+          timers.push(setTimeout(() => {
+            if (current()) {
+              try {
+                rec.start();
+              } catch (_) {
+                finish('start-failed');
+              }
+            }
+          }, 250));
+        } else {
+          rec.start();
+        }
+        SE.util.trace('mic-start');
         callbacks.state?.(true, 15);
         timers.push(setInterval(/* 콜백에서 필요한 값을 계산하거나 상태를 갱신한다. */() => {
           if (current()) {
@@ -187,8 +203,12 @@
       }
     },
     // 설정한 영어 음성으로 문장을 읽는다.
-    say(text) {
+    say(text, { auto = false } = {}) {
       if (!text) {
+        return;
+      }
+      // Safari는 사용자가 한 번도 누르지 않은 상태의 자동 재생을 막고 대기열을 멈춘다 → 첫 터치 전에는 자동 재생 생략
+      if (auto && SAFARI_ENGINE && !unlocked) {
         return;
       }
       if (!this.synthesisSupported()) {
@@ -211,7 +231,11 @@
       // 고른 영어 음성으로 실제 읽기를 시작한다.
       function speakWith(voices) {
         try {
-          window.speechSynthesis.cancel();
+          const synth = window.speechSynthesis;
+          const busy = synth.speaking || synth.pending;
+          if (busy) {
+            synth.cancel();
+          }
           const u = new window.SpeechSynthesisUtterance(String(text));
           u.lang = 'en-US';
           u.rate = SE.store.data.settings.speechRate;
@@ -230,11 +254,48 @@
             }
             SE.util.toast('문장을 읽지 못했어요 → 설정 > 진단에서 영어 음성이 보이는지 확인해 주세요.', { once: true });
           };
-          window.speechSynthesis.speak(u);
+          let started = false;
+          u.onstart = () => {
+            started = true;
+          };
+          const start = () => {
+            if (token !== sayToken) {
+              return;
+            }
+            synth.speak(u);
+            SE.util.trace('tts');
+            // 3초 안에 시작하지 않으면 대기열이 막힌 것으로 보고 풀어 준다 (다음 듣기가 동작하도록)
+            setTimeout(() => {
+              if (!started && token === sayToken && (synth.pending || synth.speaking)) {
+                synth.cancel();
+                SE.util.error({ name: 'tts-stuck' }, '읽어주기');
+                SE.util.toast('읽어주기가 멈춰서 정리했어요 → ▷ 듣기를 다시 눌러 주세요.', { once: true });
+              }
+            }, 3000);
+          };
+          // Safari는 cancel() 직후 같은 순간의 speak()를 버리므로 잠시 뒤에 읽는다
+          if (busy && SAFARI_ENGINE) {
+            setTimeout(start, 150);
+          } else {
+            start();
+          }
         } catch (e) {
           SE.util.toast('읽어주기를 시작하지 못했어요 → 화면의 문장을 읽어 주세요.', { once: true });
         }
       }
+    },
+    // 첫 사용자 터치에서 소리 없는 문장을 읽어 Safari의 음성 재생 잠금을 푼다.
+    unlock() {
+      if (unlocked || !this.synthesisSupported()) {
+        unlocked = true;
+        return;
+      }
+      unlocked = true;
+      try {
+        const u = new window.SpeechSynthesisUtterance(' ');
+        u.volume = 0;
+        window.speechSynthesis.speak(u);
+      } catch (_) {}
     },
     // 영어 음성 하나를 고른다: 로컬 미국 영어 → 로컬 영어 → 온라인 미국 영어 → 온라인 영어.
     englishVoice(voices) {
@@ -257,6 +318,12 @@
   const NO_ENGLISH_VOICE = '브라우저가 영어 음성을 찾지 못했어요 → Windows 설정 > 시간 및 언어 > 음성 > "음성 추가"에서 ' +
     'English (United States)를 설치하고, 브라우저 창을 모두 닫았다가 다시 열어 주세요.';
   let sayToken = 0;
+  let unlocked = false;
+  // iPhone·iPad·Mac Safari (WebKit) 판별: 음성 인식·합성 동작 차이를 보정하는 데만 쓴다
+  const UA = navigator.userAgent || '';
+  const SAFARI_ENGINE = /iP(hone|ad|od)/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+    (/Safari\//.test(UA) && !/(Chrome|Chromium|CriOS|FxiOS|Edg|OPR|Android)/.test(UA));
+  SE.speech.safari = SAFARI_ENGINE;
   let voicesPromise = null;
 
   // 음성 목록을 한 번 불러온다. 비어 있으면 voiceschanged를 최대 2초 기다린다.

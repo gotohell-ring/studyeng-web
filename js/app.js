@@ -91,7 +91,7 @@
       }
       if (text && key !== this.lastAudioKey) {
         this.lastAudioKey = key;
-        SE.speech.say(text);
+        SE.speech.say(text, { auto: true });
       }
     },
     // 진행을 저장하고 학습 화면을 닫는다.
@@ -431,6 +431,7 @@
           return;
         }
         try {
+          U.trace(el.dataset.action);
           this.action(el.dataset.action, el);
         } catch (error) {
           U.fatal(error, '조작');
@@ -516,6 +517,11 @@
           this.render();
         }
       });
+      // Safari 음성 재생 잠금은 사용자 터치 안에서만 풀린다
+      const unlock = () => SE.speech.unlock();
+      document.addEventListener('pointerdown', unlock, { once: true, capture: true });
+      document.addEventListener('keydown', unlock, { once: true, capture: true });
+      U.watchStalls();
       window.addEventListener('pagehide', /* 브라우저 이벤트에 맞춰 상태를 갱신한다. */() => {
         SE.speech.cancel();
         SE.store.save();
