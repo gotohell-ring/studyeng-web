@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#245b45">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data:; connect-src 'none'; font-src 'self' file:; media-src 'self' file: blob:; object-src 'none'; base-uri 'none'">
+  <title>여행 영어</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="여행 영어">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">본문으로 건너뛰기</a>
+  <header id="site-header" class="site-header"><a class="brand" href="#/home"><span class="brand-icon" aria-hidden="true">↗</span> 여행 영어</a><a class="settings-link" href="#/settings" aria-label="설정 열기">⚙︎ <span>설정</span></a></header>
+  <div id="storage-warning" class="storage-warning" role="alert" hidden>저장이 안 되고 있어요 → <a href="#/settings">설정에서 백업 내보내기</a></div>
+  <main id="main"><div id="app" aria-label="학습 화면"><section class="panel"><h1>여행 영어를 준비하고 있어요.</h1><p>계속 이 화면이면 web 폴더의 파일이 모두 있는지 확인한 뒤 다시 열어 주세요.</p></section></div></main>
+  <nav id="tabs" class="tabs" aria-label="주 메뉴"><a href="#/home" data-tab="home"><span aria-hidden="true">⌂</span>홈</a><a href="#/course" data-tab="course"><span aria-hidden="true">▤</span>코스</a><a href="#/tutor" data-tab="tutor"><span aria-hidden="true">☏︎</span>튜터</a><a href="#/review" data-tab="review"><span aria-hidden="true">↻</span>복습</a></nav>
+  <button id="toast" class="toast" type="button" role="status" aria-live="polite" title="누르면 닫기" hidden></button>
+  <noscript><p>자바스크립트가 꺼져 있어요 → 브라우저 설정에서 자바스크립트를 허용해 주세요.</p></noscript>
+  <script src="js/util.js"></script>
+  <script src="vendor/ts-fsrs-5.4.2.umd.js"></script>
+  <script src="js/normalize.js"></script>
+  <script src="js/score.js"></script>
+  <script src="js/scheduler.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/speech.js"></script>
+  <script src="js/content.js"></script>
+  <script src="js/cards.js"></script>
+  <script src="js/home.js"></script>
+  <script src="js/learning.js"></script>
+  <script src="js/views/shared.js"></script>
+  <script src="js/views/course.js"></script>
+  <script src="js/views/home.js"></script>
+  <script src="js/views/tutor.js"></script>
+  <script src="js/views/onboarding.js"></script>
+  <script src="js/views/feedback.js"></script>
+  <script src="js/views/drill.js"></script>
+  <script src="js/views/roleplay.js"></script>
+  <script src="js/views/result.js"></script>
+  <script src="js/views/lesson.js"></script>
+  <script src="js/views/review.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/views/recovery.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
