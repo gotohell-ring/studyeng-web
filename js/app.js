@@ -443,6 +443,20 @@
         case 'backup':
           SE.store.backup();
           break;
+        case 'share-backup':
+          SE.store.shareBackup();
+          break;
+        case 'save-now': {
+          const st = this.state();
+          const box = document.getElementById('answer');
+          if (st && box) {
+            st.draft = box.value || '';
+          }
+          const ok = SE.store.save();
+          const time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+          U.toast(ok ? `이 기기에 저장했어요 (${time}). 다른 기기·iCloud로 옮기려면 설정 → 파일에 저장.` : '저장하지 못했어요 → 설정 → 파일에 저장으로 백업해 주세요.');
+          break;
+        }
         case 'raw-backup':
           SE.store.backup(true);
           break;
@@ -521,6 +535,33 @@
           this.render();
         }
       });
+      // 키보드가 올라오면 문제 요약(prompt-peek)을 보여 주고 입력창 위로 맞춘다
+      const showPeek = () => {
+        const peek = document.querySelector('.prompt-peek');
+        if (document.body.classList.contains('typing') && peek) {
+          peek.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        }
+      };
+      document.addEventListener('focusin', event => {
+        if (event.target && event.target.id === 'answer') {
+          document.body.classList.add('typing');
+          setTimeout(showPeek, 350);
+        }
+      });
+      // 버튼을 누르는 순간 요약이 사라져 버튼 위치가 밀리지 않도록 조금 늦게 해제한다
+      document.addEventListener('focusout', event => {
+        if (event.target && event.target.id === 'answer') {
+          setTimeout(() => {
+            if (document.activeElement?.id !== 'answer') {
+              document.body.classList.remove('typing');
+            }
+          }, 300);
+        }
+      });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', showPeek);
+      }
+      U.persist();
       document.addEventListener('keydown', /* 브라우저 이벤트에 맞춰 상태를 갱신한다. */event => {
         if (event.isComposing || event.altKey || event.metaKey) {
           return;

@@ -39,7 +39,8 @@
       mode: s?.mode,
       draft: s?.draft,
       answer: ctx?.answer?.en,
-      kind: 'roleplay'
+      kind: 'roleplay',
+      peek: `직원: ${row.aiLine}`
     })
     }`;
   };

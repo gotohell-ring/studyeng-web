@@ -64,7 +64,7 @@
     return `<div class="lesson-top">` +
       `<span>${e(l.titleKo)}` +
       `${s.extra ? ' · 추가 연습' : ''}</span>` +
-      `${button('닫기 ×', 'close', 'icon-button', 'aria-label="레슨 닫기"')}</div>` +
+      `<span class="top-actions">${button('저장', 'save-now', 'icon-button', 'aria-label="지금까지 기록 저장"')}${button('닫기 ×', 'close', 'icon-button', 'aria-label="레슨 닫기"')}</span></div>` +
       `<div class="progress-track" role="progressbar" aria-label="레슨 진행" aria-valuemin="0" aria-valuemax="6" aria-valuenow="${progress + 1}">` +
       `<span style="width:${(progress + 1) / 6 * 100}%"></span></div>` +
       `<section class="panel task">${content}</section>` +

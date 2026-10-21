@@ -200,6 +200,14 @@
         data: this.data
       }, null, 2));
     },
+    // 공유 시트로 백업 파일을 보낸다 (iPhone: 파일에 저장 → iCloud Drive)
+    shareBackup() {
+      return U.shareFile('studyeng-backup-' + U.day() + '.json', JSON.stringify({
+        backupVersion: 1,
+        exportedAt: new Date().toISOString(),
+        data: this.data
+      }, null, 2));
+    },
     // 콜백에서 필요한 값을 계산하거나 상태를 갱신한다.
     parseBackup(text) {
       const value = JSON.parse(text);

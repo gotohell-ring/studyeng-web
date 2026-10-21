@@ -1299,3 +1299,35 @@ main {
   outline-offset: 2px;
   transition: outline-color 150ms;
 }
+
+
+/* 키보드로 입력하는 동안 문제 요약을 입력창 바로 위에 고정해 보여 준다 */
+.prompt-peek {
+  display: none;
+}
+
+body.typing .prompt-peek {
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--soft);
+  border: 1px solid var(--border);
+  font-size: 15px;
+  line-height: 1.45;
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+body.typing .notice {
+  display: none;
+}
+
+.top-actions {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}

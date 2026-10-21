@@ -88,7 +88,8 @@
       selected = [],
       answer = '',
       kind = 'drill',
-      retry = false
+      retry = false,
+      peek = ''
     } = options;
     return `${retry ? '<p class="notice">다시 연습 중이에요. 첫 시도 기록은 유지돼요.</p>' : ''}` +
       `${
@@ -98,6 +99,7 @@
       `${button('한 칸 되돌리기', 'undo-block', 'text-button')}` :
       `<div class="input-modes" aria-label="입력 방식">${button('● 말하기', 'mode-speech', mode === 'speech' ? 'selected' : '')}` +
       `${button('⌨ 키보드', 'mode-keyboard', mode === 'keyboard' ? 'selected' : '')}</div>` +
+      `${peek ? `<div class="prompt-peek" aria-hidden="true">${e(peek)}</div>` : ''}` +
       `<label class="small" for="answer">${mode === 'speech' ? '말하거나 직접 수정해 주세요' : '영어로 답해 주세요'}</label>` +
       `<textarea id="answer" lang="en" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="여기에 영어로 입력하세요">${e(draft)}</textarea>` +
       `<p id="speech-status" class="speech-status small" aria-live="polite">${mode === 'speech' ? '마이크를 누르고 말해 주세요. 최대 15초 동안 들어요.' : ''}</p>`

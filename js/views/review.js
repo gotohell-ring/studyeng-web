@@ -50,7 +50,7 @@
     return `<div class="lesson-top">` +
       `<span>복습 ${r.index + 1} / ` +
       `${r.ids.length}</span>` +
-      `${button('닫기 ×', 'review-close', 'icon-button')}</div>` +
+      `<span class="top-actions">${button('저장', 'save-now', 'icon-button', 'aria-label="지금까지 기록 저장"')}${button('닫기 ×', 'review-close', 'icon-button')}</span></div>` +
       `<section class="panel task">${header(r.kind === 'returnReview' ? '쉬었던 만큼 중요한 카드만' : `기억 연습 · ${label[c.cardType] || '영어로 답해요'}`, c.frontText, c.frontHintKo || '')}` +
       `${c.frontAudioText ? say(c.frontAudioText, '▷ 앞면 읽어주기') : ''}` +
       `${
@@ -61,7 +61,8 @@
       draft: r.draft,
       answer: c.targetText,
       kind: 'review',
-      retry: r.retry
+      retry: r.retry,
+      peek: `${c.frontText}${c.frontHintKo ? ` · ${c.frontHintKo}` : ''}`
     })
     }</section>` +
       `<p class="shortcuts">Enter 확인·다음 · Esc 닫기 · Ctrl+Space 말하기 · Ctrl+Enter 건너뛰기</p>`;

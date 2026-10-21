@@ -41,7 +41,7 @@
       `<section class="panel">` +
       `<h2>내 학습 기록</h2>` +
       `<p>브라우저 데이터를 지우기 전에 백업해 주세요. 파일 직접 실행과 시작 도우미는 저장 공간이 서로 달라요.</p>` +
-      `<div class="stack">${button('백업 내보내기', 'backup', 'secondary')}` +
+      `<div class="stack">${button('파일에 저장 · iCloud Drive', 'share-backup', 'secondary')}${button('백업 내려받기', 'backup', 'secondary')}` +
       `<label class="file-button" for="backup-file">백업 가져오기 · 전체 교체</label>` +
       `<input class="visually-hidden" type="file" id="backup-file" accept=".json,application/json">${button('진도 초기화', 'reset', 'danger')}</div></section>` +
       `<section class="panel">` +

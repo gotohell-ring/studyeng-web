@@ -104,6 +104,30 @@
         return false;
       }
     },
+    // 공유 시트로 파일을 넘긴다. iPhone은 "파일에 저장" → iCloud Drive 또는 나의 iPhone을 고를 수 있다. 공유를 못 쓰면 내려받기로 대신한다
+    async shareFile(name, text, type = 'application/json') {
+      try {
+        const file = new File([text], name, { type });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: name });
+          return true;
+        }
+      } catch (e) {
+        if (e && e.name === 'AbortError') {
+          return false;
+        }
+      }
+      return this.download(name, text, type);
+    },
+    // 브라우저가 저장소를 임의로 지우지 않도록 영구 저장을 요청한다 (허용 여부는 브라우저가 정함)
+    async persist() {
+      try {
+        if (navigator.storage && navigator.storage.persist) {
+          return await navigator.storage.persist();
+        }
+      } catch (e) {}
+      return false;
+    },
     // 텍스트를 클립보드에 복사한다.
     async copy(text) {
       try {
