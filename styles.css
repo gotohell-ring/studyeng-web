@@ -1331,3 +1331,23 @@ body.typing .notice {
   gap: 6px;
   align-items: center;
 }
+
+/* 채점 이유 목록 */
+.why ul {
+  margin: 6px 0 12px;
+  padding-left: 20px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.why li {
+  margin: 4px 0;
+}
+
+.why-near {
+  color: var(--ink);
+}
+
+.why-info {
+  color: var(--muted, inherit);
+}

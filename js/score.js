@@ -87,12 +87,14 @@
       const total = T.reduce(/* 항목별 값을 모은다. */(s, t) => s + w(t), 0),
         cost = Math.min(D[n][m], total);
       let score = !m || !total ? 0 : Math.floor((200 * (total - cost) + total) / (2 * total));
+      let capped = false;
       if (wrongInput != null) {
         const W = SE.normalize(wrongInput),
           wc = counts(W),
           tc = counts(T),
           ic = counts(I);
         if (I.join(' ') === W.join(' ') || Object.keys(wc).some(/* 조건에 맞는 항목이 있는지 확인한다. */t => wc[t] > (tc[t] || 0) && (ic[t] || 0) > (tc[t] || 0))) {
+          capped = score > 69 || I.join(' ') === W.join(' ');
           score = Math.min(score, 69);
         }
       }
@@ -123,7 +125,14 @@
         score,
         verdict: SE.verdict(score),
         matchedCandidateIndex: index,
-        wordStatuses: statuses.reverse()
+        wordStatuses: statuses.reverse(),
+        // 판정 이유 설명(explain.js)에 쓰는 정보
+        strict: !allowNearMatch,
+        keyboard: mode === 'keyboard' || mode === 'k',
+        capped,
+        candidate,
+        targetWords: T,
+        inputWords: I
       };
       if (!best || score > best.score) {
         best = result;

@@ -58,6 +58,10 @@
       `${pending.practice ? '<p class="small">연습 결과예요. 기록은 첫 유효 시도 점수를 유지해요.</p>' : ''}` +
       `<p class="small muted">${r.mode === 'speech' ? '인식 정확도예요. 발음 자체를 평가하지 않아요.' : '허용 답안과 단어를 비교한 결과예요.'}</p>` +
       `${V.resultWords(r)}` +
+      `${(() => {
+        const why = SE.explain(r).filter(x => x.type !== 'ok');
+        return why.length ? `<div class="why"><p class="answer-label">${r.verdict === 'correct' ? '참고' : '왜 이렇게 채점됐나요'}</p><ul>${why.map(x => `<li class="why-${e(x.type)}">${e(x.text)}</li>`).join('')}</ul></div>` : '';
+      })()}` +
       `<p class="answer-label">모범 답안</p>` +
       `<p class="answer-text" lang="en">${e(answer)}</p>` +
       `${say(answer, '▷ 정답 듣기')}` +
