@@ -62,7 +62,7 @@
         case 'E':
         case 'I':
           prompt = `<div class="bubble">` +
-            `<small>상대${d.type === 'I' ? ` · ${s?.turn + 1} / ${(d.turns || []).length}턴` : ''}</small>` +
+            `<small>상대${d.type === 'I' ? ` · ${e((s?.turn || 0) + 1)} / ${(d.turns || []).length}턴` : ''}</small>` +
             `<h2 lang="en">${e(a.promptEn)}</h2>` +
             `${a.promptKo ? `<p>${e(a.promptKo)}</p>` : ''}` +
             `${say(a.promptEn)}</div>`;

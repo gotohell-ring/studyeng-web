@@ -5,9 +5,12 @@
   const SE = window.SE,
     U = SE.util,
     KEY = 'studyeng.v1';
+  const writerId = U.id();
   // 저장소의 초기 구조와 설정을 만든다.
   const defaults = () => ({
     schemaVersion: 1,
+    revision: 0,
+    writerId,
     onboarded: false,
     settings: {
       defaultInput: 'speech',
@@ -46,6 +49,10 @@
         throw Error('저장 목록이 올바르지 않아요.');
       }
     }
+    if (d.revision !== undefined && (!Number.isSafeInteger(d.revision) || d.revision < 0) ||
+        d.writerId !== undefined && typeof d.writerId !== 'string') {
+      throw Error('저장 revision이 올바르지 않아요.');
+    }
     const s = d.settings;
     if (!['speech', 'keyboard'].includes(s.defaultInput) || s.tier !== 2 || !finite(s.speechRate) || s.speechRate < 0.5 || s.speechRate > 1.3 ||
       typeof s.autoPlayAudio !== 'boolean' ||
@@ -57,9 +64,25 @@
       s.reviewsPerDay > 200) {
       throw Error('설정값의 범위를 확인해 주세요.');
     }
-    // 채점 결과의 필수 필드를 확인한다.
-    const validResult = r => object(r) && finite(r.score) && r.score >= 0 && r.score <= 100 && ['correct', 'near', 'again'].includes(r.verdict) && Array.isArray(r.wordStatuses) &&
-      r.wordStatuses.every(/* 모든 항목이 조건에 맞는지 확인한다. */w => object(w) && typeof w.word === 'string' && ['correct', 'near', 'wrong', 'missing', 'extra'].includes(w.status));
+    const optional = (x, k, check) => x[k] == null || check(x[k]);
+    const nonnegative = v => Number.isSafeInteger(v) && v >= 0;
+    const strings = v => Array.isArray(v) && v.every(x => typeof x === 'string');
+    // 중첩 결과의 표시·설명에 쓰이는 선택 필드도 검증한다.
+    const validResult = r => object(r) && Number.isInteger(r.score) && r.score >= 0 && r.score <= 100 && ['correct', 'near', 'again'].includes(r.verdict) && Array.isArray(r.wordStatuses) &&
+      r.wordStatuses.every(w => object(w) && typeof w.word === 'string' &&
+        optional(w, 'inputWord', v => typeof v === 'string') &&
+        ['correct', 'near', 'wrong', 'missing', 'extra'].includes(w.status)) &&
+      ['input', 'candidate'].every(k => optional(r, k, v => typeof v === 'string')) &&
+      ['targetWords', 'inputWords'].every(k => optional(r, k, strings)) &&
+      ['skipped', 'strict', 'keyboard', 'capped', 'userCorrected'].every(k => optional(r, k, v => typeof v === 'boolean')) &&
+      optional(r, 'matchedCandidateIndex', nonnegative) &&
+      optional(r, 'mode', v => ['speech', 'keyboard'].includes(v));
+    const pending = p => object(p) && validResult(p.result) &&
+      optional(p, 'practice', v => typeof v === 'boolean');
+    const inputState = x => optional(x, 'draft', v => typeof v === 'string') &&
+      optional(x, 'mode', v => ['speech', 'keyboard'].includes(v)) &&
+      optional(x, 'retry', v => typeof v === 'boolean') &&
+      optional(x, 'speechFailures', nonnegative);
     // 레슨 세션의 저장 구조를 확인한다.
     function session(x) {
       return object(x) && typeof x.id === 'string' && typeof x.lessonId === 'string' &&
@@ -73,7 +96,12 @@
         object(x.keyAttempts) &&
         Array.isArray(x.missionsDone) &&
         Array.isArray(x.roleAnswers) &&
-        finite(x.newCards) &&
+        x.roleAnswers.every(a => object(a) && nonnegative(a.turn) && typeof a.input === 'string' && validResult(a.result)) &&
+        optional(x, 'pending', p => pending(p) && typeof p.key === 'string') &&
+        inputState(x) && Object.values(x.keyAttempts).every(nonnegative) &&
+        x.missionsDone.every(v => typeof v === 'string') &&
+        optional(x, 'blocks', v => Array.isArray(v) && v.every(nonnegative)) &&
+        nonnegative(x.newCards) &&
         typeof x.extra === 'boolean';
     }
     if (d.session !== null && !session(d.session) || !d.sessions.every(session) || !d.completed.every(/* 모든 항목이 조건에 맞는지 확인한다. */x => typeof x === 'string')) {
@@ -128,8 +156,9 @@
       if (!object(r) || !Array.isArray(r.ids) || !r.ids.every(/* 모든 항목이 조건에 맞는지 확인한다. */id => typeof id === 'string') || !Number.isInteger(r.index) || r.index < 0 ||
         r.index > r.ids.length ||
         !['review', 'returnReview', 'warmupThenLesson', 'reviewFirst'].includes(r.kind) ||
-        typeof r.day !== 'string' ||
-        r.pending != null && (!object(r.pending) || !validResult(r.pending.result) || typeof r.pending.logId !== 'string')) {
+        typeof r.day !== 'string' || !inputState(r) ||
+        !optional(r, 'practiceResult', pending) ||
+        r.pending != null && (!pending(r.pending) || typeof r.pending.logId !== 'string')) {
         throw Error('복습 세션이 올바르지 않아요.');
       }
     }
@@ -142,6 +171,24 @@
     writeFailed: false,
     defaults,
     validate,
+    baseRevision: 0,
+    snapshot: JSON.stringify(defaults()),
+    // 직접 변경하는 학습 모듈도 빠짐없이 감지한다.
+    get dirty() { return JSON.stringify(this.data) !== this.snapshot; },
+    refreshIfNewer() {
+      const raw = window.localStorage.getItem(KEY);
+      const latest = raw === null ? null : JSON.parse(raw);
+      if (!latest || (latest.revision || 0) <= this.baseRevision) return false;
+      validate(latest);
+      this.load();
+      SE.speech.cancel();
+      if (SE.app) {
+        SE.app.lastAudioKey = '';
+        SE.app.render();
+      }
+      U.toast('다른 창에서 학습 기록이 바뀌었어요 → 이 창을 새로 고칠게요');
+      return true;
+    },
     // 저장 데이터를 읽고 복구 필요 여부를 판단한다.
     load() {
       try {
@@ -155,6 +202,8 @@
         this.data = defaults();
         this.problem = this.raw === null ? '브라우저가 저장소를 허용하지 않아요.' : '저장 데이터가 손상되었거나 다른 버전이에요.';
       }
+      this.baseRevision = this.data.revision || 0;
+      this.snapshot = JSON.stringify(this.data);
       return this.data;
     },
     // 현재 학습 상태를 저장한다.
@@ -163,7 +212,14 @@
         return false;
       }
       try {
-        window.localStorage.setItem(KEY, JSON.stringify(this.data));
+        if (this.refreshIfNewer()) return false;
+        const candidate = { ...this.data, revision: this.baseRevision + 1, writerId };
+        const raw = JSON.stringify(candidate);
+        window.localStorage.setItem(KEY, raw);
+        this.data.revision = candidate.revision;
+        this.data.writerId = writerId;
+        this.baseRevision = candidate.revision;
+        this.snapshot = raw;
         this.writeFailed = false;
         return true;
       } catch (e) {
@@ -229,11 +285,25 @@
         if (!this.backup(this.blocked, 'studyeng-pre-restore.json')) {
           return;
         }
+        // 복구 상태를 바꾸기 전에 실제 영구 저장부터 확인한다.
+        try {
+          const stored = window.localStorage.getItem(KEY);
+          let revision = this.baseRevision;
+          try { revision = Math.max(revision, JSON.parse(stored)?.revision || 0); } catch (_) {}
+          data.revision = revision + 1;
+          data.writerId = writerId;
+          window.localStorage.setItem(KEY, JSON.stringify(data));
+        } catch (_) {
+          U.toast('저장 공간이 부족해 가져오지 못했어요');
+          return;
+        }
         SE.speech.cancel();
         this.data = data;
         this.blocked = false;
         this.raw = null;
-        this.save();
+        this.writeFailed = false;
+        this.baseRevision = data.revision;
+        this.snapshot = JSON.stringify(data);
         SE.app.navigate('/home');
         U.toast('백업을 가져왔어요.');
       } catch (e) {

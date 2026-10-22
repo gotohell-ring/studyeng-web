@@ -33,10 +33,10 @@
       `<div class="two-columns">` +
       `<div>` +
       `<label for="new-limit">하루 새 카드 (1~30)</label>` +
-      `<input type="number" id="new-limit" min="1" max="30" data-setting="newCardsPerDay" value="${s.newCardsPerDay}"></div>` +
+      `<input type="number" id="new-limit" min="1" max="30" data-setting="newCardsPerDay" value="${e(s.newCardsPerDay)}"></div>` +
       `<div>` +
       `<label for="review-limit">하루 복습 (10~200)</label>` +
-      `<input type="number" id="review-limit" min="10" max="200" data-setting="reviewsPerDay" value="${s.reviewsPerDay}"></div></div>` +
+      `<input type="number" id="review-limit" min="10" max="200" data-setting="reviewsPerDay" value="${e(s.reviewsPerDay)}"></div></div>` +
       `<p class="small muted">마이크가 작동하지 않으면 키보드로 자동 전환돼요. 브라우저 인식기는 네트워크 연결을 요구할 수 있어요.</p></section>` +
       `<section class="panel">` +
       `<h2>내 학습 기록</h2>` +

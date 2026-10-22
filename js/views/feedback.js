@@ -54,7 +54,7 @@
       `<div class="feedback-heading" role="status">` +
       `<h2>${icons[r.verdict] || '↻'} ` +
       `${e(labels[r.verdict] || '다시 연습해요')}</h2>` +
-      `<span>${r.score || 0}점</span></div>` +
+      `<span>${e(r.score || 0)}점</span></div>` +
       `${pending.practice ? '<p class="small">연습 결과예요. 기록은 첫 유효 시도 점수를 유지해요.</p>' : ''}` +
       `<p class="small muted">${r.mode === 'speech' ? '인식 정확도예요. 발음 자체를 평가하지 않아요.' : '허용 답안과 단어를 비교한 결과예요.'}</p>` +
       `${V.resultWords(r)}` +

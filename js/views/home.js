@@ -58,15 +58,15 @@
       ` +
       `<section class="stats" aria-label="오늘 학습">` +
       `<div>` +
-      `<strong>${streak.count}` +
+      `<strong>${e(streak.count)}` +
       `<small>일</small></strong>` +
-      `<span>연속 학습 · 프리즈 ${streak.freezes}개</span></div>` +
+      `<span>연속 학습 · 프리즈 ${e(streak.freezes)}개</span></div>` +
       `<div>` +
-      `<strong>${p.drillsDone}` +
+      `<strong>${e(p.drillsDone)}` +
       `<small>문항</small></strong>` +
       `<span>오늘 드릴</span></div>` +
       `<div>` +
-      `<strong>${p.reviewsDone + p.newCardsDone}` +
+      `<strong>${e(p.reviewsDone + p.newCardsDone)}` +
       `<small>장</small></strong>` +
       `<span>오늘 복습</span></div></section>
       ` +

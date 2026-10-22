@@ -487,6 +487,10 @@
           c.retiredReason = 'content';
         }
       });
+      window.addEventListener('storage', event => {
+        if (event.key !== 'studyeng.v1') return;
+        try { SE.store.refreshIfNewer(); } catch (e) { U.error(e, '저장 동기화'); }
+      });
       window.addEventListener('hashchange', /* 브라우저 이벤트에 맞춰 상태를 갱신한다. */() => this.render());
       document.addEventListener('click', /* 브라우저 이벤트에 맞춰 상태를 갱신한다. */event => {
         const el = event.target.closest('[data-action]');
@@ -596,13 +600,8 @@
       });
       document.addEventListener('visibilitychange', /* 브라우저 이벤트에 맞춰 상태를 갱신한다. */() => {
         if (document.hidden) {
-          const s = this.state(),
-            input = document.getElementById('answer');
-          if (s && input) {
-            s.draft = input.value;
-          }
           SE.speech.cancel();
-          SE.store.save();
+          if (SE.store.dirty) SE.store.save();
         } else {
           this.render();
         }
@@ -614,7 +613,7 @@
       U.watchStalls();
       window.addEventListener('pagehide', /* 브라우저 이벤트에 맞춰 상태를 갱신한다. */() => {
         SE.speech.cancel();
-        SE.store.save();
+        if (SE.store.dirty) SE.store.save();
       });
       this.render();
     }

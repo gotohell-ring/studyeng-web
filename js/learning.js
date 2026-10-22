@@ -428,7 +428,24 @@
     // 현재 복습 카드를 찾는다.
     reviewCard() {
       const r = SE.store.data.reviewSession;
-      return r ? SE.store.data.cards.find(/* 조건에 맞는 항목을 찾는다. */c => c.id === r.ids[r.index] && !c.retired) : null;
+      if (!r) return null;
+      let skipped = false;
+      while (r.index < r.ids.length) {
+        const card = SE.store.data.cards.find(c => c.id === r.ids[r.index] && !c.retired);
+        if (card) {
+          if (skipped) SE.store.save();
+          return card;
+        }
+        r.index++;
+        r.pending = null;
+        r.practiceResult = null;
+        r.retry = false;
+        r.draft = '';
+        r.speechFailures = 0;
+        skipped = true;
+      }
+      if (skipped) SE.store.save();
+      return null;
     },
     // 복습 응답을 채점하고 일정을 갱신한다.
     reviewSubmit(input, mode = 'keyboard', skipped = false) {
@@ -559,6 +576,7 @@
       r.retry = false;
       r.practiceResult = null;
       r.speechFailures = 0;
+      this.reviewCard();
       SE.store.save();
     },
     // 복습을 마치고 다음 학습 연결을 결정한다.

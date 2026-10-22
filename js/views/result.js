@@ -28,14 +28,14 @@
     return `<div class="completion-mark" aria-hidden="true">✓</div>${header('오늘도 한 걸음', '레슨을 마쳤어요!', l.titleKo)}` +
       `<div class="stats">` +
       `<div>` +
-      `<strong>${s.newCards}</strong>` +
+      `<strong>${e(s.newCards)}</strong>` +
       `<span>새 복습 카드</span></div>` +
       `<div>` +
-      `<strong>${streak.count}` +
+      `<strong>${e(streak.count)}` +
       `<small>일</small></strong>` +
       `<span>연속 학습</span></div>` +
       `<div>` +
-      `<strong>${avg}` +
+      `<strong>${e(avg)}` +
       `<small>점</small></strong>` +
       `<span>드릴 첫 시도 평균</span></div></div>` +
       `<p class="notice">새 카드는 다음 학습일 오전 4시부터 복습해요.</p>` +
@@ -48,8 +48,8 @@
       // 콜백에서 필요한 값을 계산하거나 상태를 갱신한다.
       x => x.turn === r.turn);
       return `<details>` +
-        `<summary>${r.turn}번째 대화 · ` +
-        `${r.result?.score || 0}점 ` +
+        `<summary>${e(r.turn)}번째 대화 · ` +
+        `${e(r.result?.score || 0)}점 ` +
         `${r.result?.score < 70 ? '· 다시 연습' : '· 잘했어요'}</summary>` +
         `<p lang="en">${e(r.input || '건너뜀')}</p>` +
         `<p class="muted">모범 답안</p>` +

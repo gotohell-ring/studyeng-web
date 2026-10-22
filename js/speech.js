@@ -8,6 +8,7 @@
     timers = [],
     active = false,
     stopRequested = false;
+  let allCancel = null;
   // 음성 처리에 등록한 타이머를 해제한다.
   const clear = () => {
     timers.forEach(/* 각 항목을 처리한다. */t => {
@@ -39,6 +40,7 @@
     cancel() {
       generation++;
       sayToken++;
+      allCancel?.();
       clear();
       active = false;
       stopRequested = false;
@@ -66,7 +68,8 @@
         heard = false,
         transcript = '',
         interim = '',
-        silence = null;
+        silence = null,
+        unchanged = null;
       // 종료되었거나 오래된 음성 이벤트를 제외한다.
       const current = () => token === generation && !finished;
       // 현재 음성 인식 시도를 한 번만 마친다.
@@ -85,7 +88,7 @@
         }
         callbacks.state?.(false, 0);
         // Safari는 녹음을 멈추면 확정(final) 결과 없이 중간 결과만 남기는 경우가 많아 중간 결과도 답으로 쓴다
-        const text = (transcript.trim() || interim.trim());
+        const text = (transcript + ' ' + interim).replace(/\s+/g, ' ').trim();
         if (text && (!reason || reason === 'no-speech' || reason === 'aborted')) {
           callbacks.result?.(text);
         } else {
@@ -135,12 +138,14 @@
         };
         rec.onsoundstart = () => {
           if (current()) {
-            heard = true;
+            markSpeech();
           }
         };
         // 음성이 감지되었음을 기록한다.
         const markSpeech = () => {
           heard = true;
+          clearTimeout(silence);
+          clearTimeout(unchanged);
         };
         // 콜백에서 필요한 값을 계산하거나 상태를 갱신한다.
         rec.onspeechstart = () => {
@@ -174,8 +179,9 @@
           }
           callbacks.interim?.((transcript + interim).trim());
           clearTimeout(silence);
-          silence = setTimeout(watchdog, 1500);
-          timers.push(silence);
+          // speechend가 없는 엔진도 마지막 결과 후 3초 무변화면 종료한다.
+          unchanged = setTimeout(watchdog, 3000);
+          timers.push(unchanged);
         };
         // 콜백에서 필요한 값을 계산하거나 상태를 갱신한다.
         rec.onerror = e => {
@@ -235,6 +241,7 @@
       }
       const token = ++sayToken;
       // 음성 목록이 이미 있으면 바로 읽고, 비어 있으면(첫 호출) 준비될 때까지 기다렸다가 읽는다.
+      allCancel?.();
       const ready = window.speechSynthesis.getVoices();
       if (ready.length > 0) {
         speakWith(ready);
@@ -329,7 +336,32 @@
         return;
       }
       const token = ++sayToken;
+      allCancel?.();
       const synth = window.speechSynthesis;
+      let ended = false;
+      const lineTimers = new Set();
+      const later = (fn, ms) => {
+        const id = setTimeout(() => { lineTimers.delete(id); fn(); }, ms);
+        lineTimers.add(id);
+        return id;
+      };
+      const end = (completed, beforeNotify) => {
+        if (ended) return;
+        ended = true;
+        lineTimers.forEach(clearTimeout);
+        lineTimers.clear();
+        if (allCancel === cancelAll) allCancel = null;
+        beforeNotify?.();
+        hooks.onEnd?.(completed);
+      };
+      const cancelAll = () => end(false);
+      allCancel = cancelAll;
+      const fail = () => {
+        if (ended || token !== sayToken) return;
+        // cancel()이 동기적으로 onend를 보내도 다음 줄로 넘어가지 않는다.
+        end(false, () => synth.cancel());
+        SE.util.toast('읽어주기가 멈췄어요 → 다시 눌러 주세요', { once: true });
+      };
       const begin = voices => {
         if (token !== sayToken) {
           return;
@@ -337,7 +369,7 @@
         const main = SE.speech.englishVoice(voices);
         if (!main && voices.length > 0) {
           SE.util.toast(NO_ENGLISH_VOICE, { once: true });
-          hooks.onEnd?.(false);
+          end(false);
           return;
         }
         // 화자 구분: 영어 음성이 둘 이상이면 내 대사(learner)는 다른 음성, 하나뿐이면 음 높이만 바꾼다
@@ -345,11 +377,11 @@
         const rate = SE.store.data.settings.speechRate;
         let index = 0;
         const next = () => {
-          if (token !== sayToken) {
+          if (token !== sayToken || ended) {
             return;
           }
           if (index >= list.length) {
-            hooks.onEnd?.(true);
+            end(true);
             return;
           }
           const item = list[index++];
@@ -365,29 +397,43 @@
           if (mine && !other) {
             u.pitch = 1.2;
           }
-          let done = false;
-          // Safari는 onend를 빠뜨릴 때가 있어 문장 길이로 예상 시간을 잡아 넘어간다 (늦으면 다음 문장이 대기열에 쌓일 뿐)
-          const fallback = setTimeout(() => go(), 2000 + String(item.t).length * 110 / Math.max(0.3, rate || 1));
+          let done = false, started = false, extensions = 0;
+          let startTimer, playbackTimer;
+          const duration = 2000 + String(item.t).length * 110 / Math.max(0.3, rate || 1);
+          const current = () => !ended && token === sayToken && !done;
           const go = () => {
-            if (done) {
-              return;
-            }
+            if (!current()) return;
             done = true;
-            clearTimeout(fallback);
-            setTimeout(next, 350);
+            clearTimeout(startTimer);
+            clearTimeout(playbackTimer);
+            later(next, 350);
           };
-          u.onend = go;
-          u.onerror = event => {
-            if (event && (event.error === 'interrupted' || event.error === 'canceled')) {
-              return;
-            }
-            go();
+          const playback = () => {
+            if (!current()) return;
+            if (!synth.speaking) { go(); return; }
+            if (extensions++ < 2) playbackTimer = later(playback, duration);
+            else fail();
           };
-          synth.speak(u);
+          u.onstart = () => {
+            if (!current() || started) return;
+            started = true;
+            clearTimeout(startTimer);
+            playbackTimer = later(playback, duration);
+          };
+          // onstart를 빠뜨리는 엔진도 있으므로 onend가 오면 그대로 다음 줄로 넘어간다
+          u.onend = () => go();
+          u.onerror = () => { if (current()) fail(); };
+          // 3초 안에 onstart가 없어도 실제로 말하는 중이면 시작한 것으로 본다
+          startTimer = later(() => {
+            if (!current() || started) return;
+            if (synth.speaking) u.onstart();
+            else fail();
+          }, 3000);
+          try { synth.speak(u); } catch (_) { fail(); }
         };
         if (synth.speaking || synth.pending) {
           synth.cancel();
-          setTimeout(next, SAFARI_ENGINE ? 150 : 0);
+          later(next, SAFARI_ENGINE ? 150 : 0);
         } else {
           next();
         }
