@@ -539,8 +539,14 @@
           this.render();
         }
       });
-      // 키보드가 올라오면 문제 요약(prompt-peek)을 보여 주고 입력창 위로 맞춘다
-      const showPeek = () => {
+      // 키보드가 올라오면 문제 요약(prompt-peek)이 보이도록 **한 번만** 맞춘다.
+      // 화면 크기 변화마다 다시 맞추면 iPhone에서 위로 스크롤할 때(주소창이 펼쳐지며 크기가 바뀜) 계속 되돌아가 스크롤이 막힌다
+      let peekPending = false;
+      const showPeekOnce = () => {
+        if (!peekPending) {
+          return;
+        }
+        peekPending = false;
         const peek = document.querySelector('.prompt-peek');
         if (document.body.classList.contains('typing') && peek) {
           peek.scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -548,10 +554,18 @@
       };
       document.addEventListener('focusin', event => {
         if (event.target && event.target.id === 'answer') {
+          const wasTyping = document.body.classList.contains('typing');
           document.body.classList.add('typing');
-          setTimeout(showPeek, 350);
+          if (!wasTyping) {
+            peekPending = true;
+            setTimeout(showPeekOnce, 450);
+          }
         }
       });
+      // 사용자가 직접 스크롤을 시작하면 자동 맞춤을 취소한다
+      ['touchmove', 'wheel'].forEach(type => document.addEventListener(type, () => {
+        peekPending = false;
+      }, { passive: true }));
       // 버튼을 누르는 순간 요약이 사라져 버튼 위치가 밀리지 않도록 조금 늦게 해제한다
       document.addEventListener('focusout', event => {
         if (event.target && event.target.id === 'answer') {
@@ -563,7 +577,8 @@
         }
       });
       if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', showPeek);
+        // 키보드가 다 올라온 시점(첫 크기 변화)에 한 번만 맞춘다
+        window.visualViewport.addEventListener('resize', showPeekOnce);
       }
       U.persist();
       document.addEventListener('keydown', /* 브라우저 이벤트에 맞춰 상태를 갱신한다. */event => {
