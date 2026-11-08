@@ -197,7 +197,7 @@
 - **데이터 지연 허용: 15분** → 실시간 스트리밍 불필요, 시세 폴링 주기 5~15분으로 충분 (API 호출량 절감)
 
 ### 4-1. LLM 추론 계층 (리포트 요약·번역·브리핑)
-- 모델: **추론형(thinking) DeepSeek** — 후보 `deepseek-v4-pro`(thinking 모드) / 구버전 `deepseek-reasoner`는 단종 예정 보도 → 실제 ID는 OpenCode `/models`로 확인 후 `LLM_MODEL`에 설정
+- 모델: **추론형(thinking) DeepSeek** — **후보 `deepseek-v4.1-flash`** (thinking 모드 활성화) / 구버전 `deepseek-reasoner`는 단종 예정 보도 → 실제 ID는 OpenCode `/models`로 확인 후 `LLM_MODEL`에 설정
   - 추론 과정(reasoning_content)은 화면에 기본 접힘으로만 표시, 최종 답변만 대화 기록에 저장(토큰 절감)
 - 제공자: **OpenCode API의 DeepSeek 모델** (OpenAI 호환 `/chat/completions`, 스트리밍·function calling 사용)
 - 용도: ① 리포트 요약·번역(07:00 배치) ② 카드 클릭 요약 ③ 사이드 채팅 답변
@@ -229,7 +229,7 @@
 - [x] LLM: OpenCode API의 DeepSeek 모델 (클릭 요약 + 사이드 채팅 + 리포트 요약)
 - [x] 수집: 매일 07:00 KST / 새로고침 = 전체 세션 재로딩
 - [x] StockNow: MCP 연결 검증 완료
-- [x] DeepSeek: 추론형 모델 (정확한 모델 ID는 OpenCode `/models`로 확인)
+- [x] DeepSeek: 추론형, 후보 `deepseek-v4.1-flash` (정확한 모델 ID는 OpenCode `/models`로 확인)
 - [x] StockNow: 무료 요금제 (100회/일 예산 배분 적용)
 - [x] 주가: Google Finance (Google Sheets `GOOGLEFINANCE` 경유)
 - [x] 옵션: 국내 = 사용자 제공 / 해외 = Cboe 지연 JSON → Yahoo → Massive → MarketData.app 폴백
