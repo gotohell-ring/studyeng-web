@@ -1,4 +1,4 @@
-# 마켓 브리핑 대시보드 — 제작 프롬프트 (v0.4)
+# 마켓 브리핑 대시보드 — 제작 프롬프트 (v0.5)
 
 > 이 문서는 웹 대시보드 구현을 맡을 에이전트/개발자에게 그대로 전달하는 **마스터 프롬프트**입니다.
 > `[추천]` 표시는 원 요구사항 외에 추가 제안된 항목입니다. 범위에서 빼려면 해당 줄만 지우면 됩니다.
@@ -92,10 +92,22 @@
 ---
 
 ### 1-6b. 옵션 데이터 (신규)
-| 시장 | 대상 | 소스 (15분 지연·무료 기준) |
+| 시장 | 대상 | 소스 |
 |---|---|---|
-| 미국 | SPY, QQQ, SPX/NDX, 관심종목 | **Cboe 지연 시세** 옵션체인(JSON) — 비공식 공개 피드, 이용약관 확인 필요 / 백업: Yahoo Finance 옵션체인(비공식) |
-| 국내 | KOSPI200 옵션 | **KRX 정보데이터시스템 / KRX Open API**(일별, API 키 필요) |
+| 국내 | KOSPI200 옵션 | **사용자 제공 데이터** (형식 확인 후 어댑터 작성) |
+| 해외(미국) | SPY, QQQ, SPX, NDX, 관심종목 | **무료 소스 다중 구성** (아래 표, 장애 시 자동 폴백) |
+
+**해외 옵션 무료 소스 (우선순위 / 폴백 순서)**
+| 순위 | 소스 | 키 | 지연·범위 | 제공 필드 | 제약 |
+|---|---|---|---|---|---|
+| 1 | **Cboe 지연 시세 JSON** `cdn.cboe.com/api/global/delayed_quotes/options/{SYM}.json` (지수는 `_SPX` 형식) | 불필요 | 15분 지연, 전 만기 체인 | Bid/Ask/Last, 거래량, **OI, IV, Greeks** | 비공식 공개 피드 → 형식 변경 위험, 과도한 호출 금지 |
+| 2 | **Yahoo Finance 옵션체인** (`yfinance` 등) | 불필요 | 15분 지연 | Bid/Ask/Last, 거래량, OI, IV (Greeks 없음 → 직접 계산) | 비공식, 차단·형식 변경 위험 |
+| 3 | **Massive(구 Polygon) Options Basic** | 무료 키 | **일별(EOD)** | 계약 목록, 일별 OHLCV | 분당 5회 |
+| 4 | **MarketData.app 무료 키** | 무료 키 | 지연 | 체인·Greeks | 일 100회 (정책 변경 확인 필요) |
+
+- 운영 방식: 07:00 배치 + 새로고침 + 장중 15분 캐시 / 주요 5~10개 기초자산만 수집해 호출량 최소화
+- 정규화: 모든 소스를 공통 스키마로 변환 `{underlying, expiry, strike, type, bid, ask, last, volume, oi, iv, delta, gamma, asOf, source}`
+- Greeks 미제공 소스는 Black-Scholes로 계산: $d_1=\dfrac{\ln(S/K)+(r+\sigma^2/2)T}{\sigma\sqrt{T}}$, $\Delta_{call}=N(d_1)$
 
 - Google Finance는 옵션 데이터를 제공하지 않음 → 위 소스로 별도 어댑터 구성
 - 표시 지표
@@ -220,8 +232,8 @@
 - [x] DeepSeek: 추론형 모델 (정확한 모델 ID는 OpenCode `/models`로 확인)
 - [x] StockNow: 무료 요금제 (100회/일 예산 배분 적용)
 - [x] 주가: Google Finance (Google Sheets `GOOGLEFINANCE` 경유)
-- [x] 옵션: 미국 Cboe 지연 시세 / 국내 KRX
+- [x] 옵션: 국내 = 사용자 제공 / 해외 = Cboe 지연 JSON → Yahoo → Massive → MarketData.app 폴백
+- [ ] 국내 옵션 데이터 제공 형식(CSV/엑셀/API/시트)
 - [ ] 미 국채 2Y/10Y 소스 (GOOGLEFINANCE 커버리지 불확실 → FRED·미 재무부 일별 데이터 후보)
-- [ ] KRX Open API 키 발급 여부
 - [ ] 신규 레포 이름 / 공개·비공개 여부
 - [ ] 백엔드 실행 환경(Cloudflare Workers / GitHub Actions 크론 / Vercel)
